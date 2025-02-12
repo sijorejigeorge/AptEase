@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apartment Listings Query</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+            text-align: center; 
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            width: 65%; /* Keep the width as is */
+            padding: 12px; /* Increase padding for height */
+            margin-right: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 15px; /* Optionally adjust font size for better appearance */
+            height: auto; /* Ensure the height adjusts based on padding */
+        }
+        select, button {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        label {
+            margin-right: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            cursor: pointer;
+        }
+        th:hover {
+            background-color: #ddd;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        #totalResults {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        #summarizedText {
+            margin: 10px 0;
+            font-style: italic;
+            text-align: left; /* Center the text inside the box */
+            padding: 20px; /* Add space inside the box */
+            border: 1px solid #ddd; /* Add border around the box */
+            background-color: #f9f9f9; /* Light background for the box */
+            width: 80%; /* Set the box width */
+             /* Limit the width to 600px */
+            margin-left: auto; /* Center the box horizontally */
+            margin-right: auto; /* Center the box horizontally */
+        }
+        #errorMessage {
+            color: red;
+            font-weight: bold;
+        }
+        #errorDetails {
+            color: red;
+            font-size: 0.8em;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Apartment Listings Query</h1>
+    <form id="queryForm">
+        <input type="text" name="query" placeholder="Enter your query here" required>
+        <label for="limit">Results to display:</label>
+        <select id="limit" name="limit">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="30">30</option>
+        </select>
+        <button type="submit">Search</button>
+    </form>
+
+    <h2 id="totalResults"></h2>
+    <div id="errorMessage" style="display: none;"></div>
+    <div id="errorDetails" style="display: none;"></div>
+
+    <div>
+        <label>
+            <input type="checkbox" id="toggleFilter" onchange="applyToggleFilter()"> Remove N/A Review Scores
+        </label>
+    </div>
+    <div>
+        <h3>Summary of the Results:</h3>
+        <p id="summarizedText">Loading summary...</p>
+    </div>
+    <table id="resultsTable" style="display: none;">
+        <thead>
+            <tr>
+                <th onclick="sortTable('name')">Title</th>
+                <th onclick="sortTable('summary')">Summary</th>
+                <th onclick="sortTable('host_name')">Host Name</th>
+                <th onclick="sortTable('bed_bath')">Bed/Bath</th>
+                <th onclick="sortTable('city')">City</th>
+                <th onclick="sortTable('price')">Price($)</th>
+                <th onclick="sortTable('review_scores_rating')">Review Score</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+
+    <script>
+        let currentResults = [];
+        let displayedResults = [];
+        let currentSortColumn = null;
+        let currentSortOrder = 'asc';
+        let filterNARemoved = false;
+
+        document.getElementById("queryForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+            document.getElementById("totalResults").innerText = "";
+            document.getElementById("resultsTable").style.display = "none";
+            document.getElementById("tableBody").innerHTML = "";
+            document.getElementById("summarizedText").innerText = "Loading summary...";
+            document.getElementById("errorMessage").style.display = "none";
+            document.getElementById("errorDetails").style.display = "none";
+
+            const query = document.querySelector('input[name="query"]').value;
+            try {
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+
+                const data = await response.json();
+
+                if (data.result.error) {
+                    throw new Error(data.result.error);
+                }
+
+                const totalResults = data.result.total_results;
+                document.getElementById("totalResults").innerText = `Total Results: ${totalResults}`;
+
+                if (totalResults === 0) {
+                    document.getElementById("totalResults").innerText += " (No data found)";
+                    return;
+                }
+
+                currentResults = data.result.data.map(item => ({
+                    name: item.name || "N/A",
+                    summary: item.summary || "N/A",
+                    host_name: item.host_name || "N/A",
+                    bed_bath: `${formatNumber(item.bedrooms)}b${formatNumber(item.bathrooms)}b`,
+                    city: item.city || "N/A",
+                    price: formatPrice(item.price),
+                    review_scores_rating: item.review_scores_rating ? parseFloat(item.review_scores_rating) : "N/A",
+                    amenities: item.amenities || "N/A"
+                }));
+
+                applyLimitAndRender();
+            } catch (error) {
+                document.getElementById("errorMessage").style.display = "block";
+                document.getElementById("errorMessage").innerText = "Something went wrong, please try a different query.";
+                document.getElementById("errorDetails").style.display = "block";
+                document.getElementById("errorDetails").innerText = `Error details: ${error.message}`;
+            }
+        });
+
+        function applyLimitAndRender() {
+            const limit = parseInt(document.getElementById("limit").value, 10);
+            displayedResults = filterNARemoved
+                ? currentResults.filter(item => item.review_scores_rating !== "N/A")
+                : currentResults;
+
+            displayedResults = displayedResults.slice(0, limit);
+            renderTable();
+            updateSummary();
+        }
+
+        function renderTable() {
+            const tableBody = document.getElementById("tableBody");
+            tableBody.innerHTML = "";
+            displayedResults.forEach(row => {
+                const tableRow = document.createElement("tr");
+                Object.keys(row).forEach(key => {
+                    if (key !== "amenities") {
+                        const td = document.createElement("td");
+                        td.innerText = row[key] === "N/A" ? "N/A" : row[key];
+                        tableRow.appendChild(td);
+                    }
+                });
+                tableBody.appendChild(tableRow);
+            });
+            document.getElementById("resultsTable").style.display = "table";
+        }
+
+        async function updateSummary() {
+            const visibleResults = displayedResults.map(item => ({
+                summary: item.summary,
+                host_name: item.host_name,
+                bed_bath: item.bed_bath,
+                city: item.city,
+                price: item.price,
+                review_scores_rating: item.review_scores_rating,
+                amenities: item.amenities
+            }));
+
+            try {
+                const summaryResponse = await fetch('/generate-summary', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ results: visibleResults })
+                });
+
+                const summaryData = await summaryResponse.json();
+                document.getElementById("summarizedText").innerText = summaryData.summary;
+            } catch (error) {
+                document.getElementById("summarizedText").innerText = "Failed to load summary.";
+                console.error("Error fetching summary:", error);
+            }
+        }
+
+        function sortTable(column) {
+            currentSortOrder = currentSortColumn === column && currentSortOrder === 'asc' ? 'desc' : 'asc';
+            currentSortColumn = column;
+
+            currentResults.sort((a, b) => {
+                if (column === "price") {
+                    const aValue = a[column] === "N/A" ? -Infinity : a[column];
+                    const bValue = b[column] === "N/A" ? -Infinity : b[column];
+                    return currentSortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+                }
+                
+                if (column === "review_scores_rating") {
+                    const aValue = a[column] === "N/A" ? -Infinity : a[column];
+                    const bValue = b[column] === "N/A" ? -Infinity : b[column];
+                    return currentSortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+                } else {
+                    return currentSortOrder === 'asc'
+                        ? a[column].localeCompare(b[column])
+                        : b[column].localeCompare(a[column]);
+                }
+            });
+
+            applyLimitAndRender();
+        }
+
+        function formatNumber(num) {
+            return num ? (num % 1 === 0 ? parseInt(num, 10) : num) : 0;
+        }
+
+        function formatPrice(price) {
+            if (!price) return "N/A";
+            const numericPrice = parseFloat(price.replace(/[^0-9.-]+/g, ""));
+            return isNaN(numericPrice) ? null : numericPrice;
+        }
+
+        function applyToggleFilter() {
+            filterNARemoved = document.getElementById("toggleFilter").checked;
+            applyLimitAndRender();
+        }
+
+        document.getElementById("limit").addEventListener("change", applyLimitAndRender);
+    </script>
+</body>
+</html>
