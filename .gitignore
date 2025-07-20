@@ -1,0 +1,14 @@
+# Ignore Python bytecode files
+__pycache__/
+
+# Ignore dataset folder 
+back_up/
+database_db/
+training_data/
+trash/
+
+# Ignore large files
+apartments.db
+dataset_db/airbnb-listings.csv
+project_info/
+fine_tuned_model/pytorch_model.bin

@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AptEase - Conversational Apartment Finder</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            margin: 0;
+            background: linear-gradient(135deg, #dbeedb 0%, #b7cbb7 100%);
+            min-height: 100vh;
+        }
+        .header {
+            background: #4b6e4b;
+            color: #fff;
+            padding: 24px 0 16px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #f6faf6;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            padding: 32px 24px;
+        }
+        form {
+            margin-bottom: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+        }
+        input[type="text"] {
+            width: 60%;
+            padding: 14px;
+            border: 1px solid #b0c4de;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            transition: border 0.2s;
+        }
+        input[type="text"]:focus {
+            border: 1.5px solid #007BFF;
+            outline: none;
+        }
+        select, button {
+            padding: 12px 18px;
+            border: 1px solid #b0c4de;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        button {
+            background: linear-gradient(90deg, #6ca96c 60%, #4b6e4b 100%);
+            color: #fff;
+            font-weight: 700;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: linear-gradient(90deg, #4b6e4b 60%, #6ca96c 100%);
+        }
+        label {
+            margin-right: 10px;
+        }
+        .summary-section {
+            margin: 24px 0;
+            background: #eaf6ea;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        #summarizedText {
+            font-style: italic;
+            text-align: left;
+            padding: 10px;
+            border: none;
+            background: none;
+            width: 100%;
+            margin: 0;
+        }
+        #totalResults {
+            margin-top: 20px;
+            font-weight: bold;
+            color: #007BFF;
+        }
+        #errorMessage {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+        #errorDetails {
+            color: #d32f2f;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        .filter-section {
+            margin: 18px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 24px;
+            background: #eaf6ea;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        th, td {
+            border: none;
+            padding: 12px 10px;
+            text-align: left;
+        }
+        th {
+            background: #c7e1c7;
+            cursor: pointer;
+            font-weight: 700;
+            color: #4b6e4b;
+            transition: background 0.2s;
+        }
+        th:hover {
+            background: #b7cbb7;
+        }
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        tr:hover {
+            background: #e3eafc;
+        }
+        @media (max-width: 700px) {
+            .container {
+                padding: 12px 4px;
+            }
+            form {
+                flex-direction: column;
+                gap: 8px;
+            }
+            input[type="text"] {
+                width: 100%;
+            }
+        }
+        /* --- User's requested legacy styles at the top of the page --- */
+        label { margin-right: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; cursor: pointer; }
+        th:hover { background-color: #ddd; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        tr:hover { background-color: #f1f1f1; }
+        #totalResults { margin-top: 20px; font-weight: bold; }
+        #summarizedText { margin: 10px 0; font-style: italic; text-align: left; padding: 20px; border: 1px solid #ddd; background-color: #f9f9f9; width: 80%; margin-left: auto; margin-right: auto; }
+        #errorMessage { color: red; font-weight: bold; }
+        #errorDetails { color: red; font-size: 0.8em; margin-top: 5px; }
+        
+        label {
+            margin-right: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            cursor: pointer;
+        }
+        th:hover {
+            background-color: #ddd;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        #totalResults {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        #summarizedText {
+            margin: 10px 0;
+            font-style: italic;
+            text-align: left; /* Center the text inside the box */
+            padding: 20px; /* Add space inside the box */
+            border: 1px solid #ddd; /* Add border around the box */
+            background-color: #f9f9f9; /* Light background for the box */
+            width: 80%; /* Set the box width */
+             /* Limit the width to 600px */
+            margin-left: auto; /* Center the box horizontally */
+            margin-right: auto; /* Center the box horizontally */
+        }
+        #errorMessage {
+            color: red;
+            font-weight: bold;
+        }
+        #errorDetails {
+            color: red;
+            font-size: 0.8em;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>AptEase - Conversational Apartment Finder</h1>
+    </div>
+    <div class="container">
+        <form id="queryForm">
+            <input type="text" name="query" placeholder="Enter your query here" required>
+            <label for="limit">Results to display:</label>
+            <select id="limit" name="limit">
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="30">30</option>
+            </select>
+            <button type="submit">Search</button>
+        </form>
+        <h2 id="totalResults"></h2>
+        <div id="errorMessage" style="display: none;"></div>
+        <div id="errorDetails" style="display: none;"></div>
+        <div class="filter-section">
+            <label>
+                <input type="checkbox" id="toggleFilter" onchange="applyToggleFilter()"> Remove N/A Review Scores
+            </label>
+        </div>
+        <div class="summary-section">
+            <h3>Summary of the Results:</h3>
+            <p id="summarizedText">Loading summary...</p>
+        </div>
+        <table id="resultsTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th onclick="sortTable('name')">Title</th>
+                    <th onclick="sortTable('summary')">Summary</th>
+                    <th onclick="sortTable('host_name')">Host Name</th>
+                    <th onclick="sortTable('bed_bath')">Bed/Bath</th>
+                    <th onclick="sortTable('city')">City</th>
+                    <th onclick="sortTable('price')">Price($)</th>
+                    <th onclick="sortTable('review_scores_rating')">Review Score</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+    <script>
+        let currentResults = [];
+        let displayedResults = [];
+        let currentSortColumn = null;
+        let currentSortOrder = 'asc';
+        let filterNARemoved = false;
+
+        document.getElementById("queryForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+            document.getElementById("totalResults").innerText = "";
+            document.getElementById("resultsTable").style.display = "none";
+            document.getElementById("tableBody").innerHTML = "";
+            document.getElementById("summarizedText").innerText = "Loading summary...";
+            document.getElementById("errorMessage").style.display = "none";
+            document.getElementById("errorDetails").style.display = "none";
+
+            const query = document.querySelector('input[name="query"]').value;
+            try {
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+
+                const data = await response.json();
+
+                if (data.result.error) {
+                    throw new Error(data.result.error);
+                }
+
+                const totalResults = data.result.total_results;
+                document.getElementById("totalResults").innerText = `Total Results: ${totalResults}`;
+
+                if (totalResults === 0) {
+                    document.getElementById("totalResults").innerText += " (No data found)";
+                    return;
+                }
+
+                currentResults = data.result.data.map(item => ({
+                    name: item.name || "N/A",
+                    summary: item.summary || "N/A",
+                    host_name: item.host_name || "N/A",
+                    bed_bath: `${formatNumber(item.bedrooms)}b${formatNumber(item.bathrooms)}b`,
+                    city: item.city || "N/A",
+                    price: formatPrice(item.price),
+                    review_scores_rating: item.review_scores_rating ? parseFloat(item.review_scores_rating) : "N/A",
+                    amenities: item.amenities || "N/A"
+                }));
+
+                applyLimitAndRender();
+            } catch (error) {
+                document.getElementById("errorMessage").style.display = "block";
+                document.getElementById("errorMessage").innerText = "Something went wrong, please try a different query.";
+                document.getElementById("errorDetails").style.display = "block";
+                document.getElementById("errorDetails").innerText = `Error details: ${error.message}`;
+            }
+        });
+
+        function applyLimitAndRender() {
+            const limit = parseInt(document.getElementById("limit").value, 10);
+            displayedResults = filterNARemoved
+                ? currentResults.filter(item => item.review_scores_rating !== "N/A")
+                : currentResults;
+
+            displayedResults = displayedResults.slice(0, limit);
+            renderTable();
+            updateSummary();
+        }
+
+        function renderTable() {
+            const tableBody = document.getElementById("tableBody");
+            tableBody.innerHTML = "";
+            displayedResults.forEach(row => {
+                const tableRow = document.createElement("tr");
+                Object.keys(row).forEach(key => {
+                    if (key !== "amenities") {
+                        const td = document.createElement("td");
+                        td.innerText = row[key] === "N/A" ? "N/A" : row[key];
+                        tableRow.appendChild(td);
+                    }
+                });
+                tableBody.appendChild(tableRow);
+            });
+            document.getElementById("resultsTable").style.display = "table";
+        }
+
+        async function updateSummary() {
+            const visibleResults = displayedResults.map(item => ({
+                summary: item.summary,
+                host_name: item.host_name,
+                bed_bath: item.bed_bath,
+                city: item.city,
+                price: item.price,
+                review_scores_rating: item.review_scores_rating,
+                amenities: item.amenities
+            }));
+
+            try {
+                const summaryResponse = await fetch('/generate-summary', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ results: visibleResults })
+                });
+
+                const summaryData = await summaryResponse.json();
+                document.getElementById("summarizedText").innerText = summaryData.summary;
+            } catch (error) {
+                document.getElementById("summarizedText").innerText = "Failed to load summary.";
+                console.error("Error fetching summary:", error);
+            }
+        }
+
+        function sortTable(column) {
+            currentSortOrder = currentSortColumn === column && currentSortOrder === 'asc' ? 'desc' : 'asc';
+            currentSortColumn = column;
+
+            currentResults.sort((a, b) => {
+                if (column === "price") {
+                    const aValue = a[column] === "N/A" ? -Infinity : a[column];
+                    const bValue = b[column] === "N/A" ? -Infinity : b[column];
+                    return currentSortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+                }
+                
+                if (column === "review_scores_rating") {
+                    const aValue = a[column] === "N/A" ? -Infinity : a[column];
+                    const bValue = b[column] === "N/A" ? -Infinity : b[column];
+                    return currentSortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+                } else {
+                    return currentSortOrder === 'asc'
+                        ? a[column].localeCompare(b[column])
+                        : b[column].localeCompare(a[column]);
+                }
+            });
+
+            applyLimitAndRender();
+        }
+
+        function formatNumber(num) {
+            return num ? (num % 1 === 0 ? parseInt(num, 10) : num) : 0;
+        }
+
+        function formatPrice(price) {
+            if (!price) return "N/A";
+            const numericPrice = parseFloat(price.replace(/[^0-9.-]+/g, ""));
+            return isNaN(numericPrice) ? null : numericPrice;
+        }
+
+        function applyToggleFilter() {
+            filterNARemoved = document.getElementById("toggleFilter").checked;
+            applyLimitAndRender();
+        }
+
+        document.getElementById("limit").addEventListener("change", applyLimitAndRender);
+    </script>
+</body>
+</html>
