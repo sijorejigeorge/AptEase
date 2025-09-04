@@ -11,4 +11,4 @@ trash/
 apartments.db
 dataset_db/airbnb-listings.csv
 project_info/
-fine_tuned_model/pytorch_model.bin
+
